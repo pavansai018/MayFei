@@ -1,1 +1,1 @@
-<div align="center"><img src="misc/mayfei.jpeg" width="550"/></div>
+<div align="center"><img src="misc/mayfei.png" width="550"/></div>
