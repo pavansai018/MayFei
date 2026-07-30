@@ -12,10 +12,6 @@ class Transformer(nn.Module):
     dropout, as in Vaswani et al., 2017 (https://arxiv.org/abs/1706.03762).
 
     Attributes:
-        token_embeddings: Linear projection from vocabulary space to
-            embedding space.
-        position_embeddings: Linear projection from context-length space to
-            embedding space.
         dropout: Dropout applied after each sublayer.
         norm1: Layer normalization applied before the attention sublayer.
         mha: Multi-head self-attention sublayer.
