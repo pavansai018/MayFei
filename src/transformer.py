@@ -34,9 +34,6 @@ class Transformer(nn.Module):
         """
         super().__init__()
 
-        self.token_embeddings: nn.Linear = nn.Linear(in_features=cfg['vocab_size'], out_features=cfg['emb_dim'])
-        self.position_embeddings: nn.Linear = nn.Linear(in_features=cfg['context_length'], out_features=cfg['emb_dim'])
-
         self.dropout: nn.Dropout = nn.Dropout(p=cfg['drop_rate'])
         self.norm1: LayerNorm = LayerNorm(cfg=cfg)
 
