@@ -80,7 +80,7 @@ class MultiHeadAttention(nn.Module):
         attention_scores: [batch, num_heads, num_tokens, num_tokens]
         '''
         attention_scores: torch.Tensor = queries @ keys.transpose(dim0=2, dim1=3)
-        mask = self.mask.bool()[:self.context_length, :self.context_length]
+        mask = self.mask.bool()[:num_tokens, :num_tokens]
         attention_scores.masked_fill_(mask, -torch.inf)
         attention_weights: torch.Tensor = torch.softmax(attention_scores/(keys.shape[-1]**0.5), dim=-1)
         attention_weights = self.dropout(attention_weights)
