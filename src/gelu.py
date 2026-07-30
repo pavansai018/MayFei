@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-
+import math
 
 class GELU(nn.Module):
     """Gaussian Error Linear Unit (GELU) activation module.
@@ -26,5 +26,5 @@ class GELU(nn.Module):
         """
         # tanh approximation of GELU:
         # 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
-        gelu_x: torch.Tensor = 0.5 * x * (1 + torch.tanh(torch.sqrt(torch.tensor(2.0/torch.pi)) * (x + 0.044715 * torch.pow(x, 3))))
+        gelu_x: torch.Tensor = 0.5 * x * (1 + torch.tanh(math.sqrt(2.0/math.pi) * (x + 0.044715 * torch.pow(x, 3))))
         return gelu_x
