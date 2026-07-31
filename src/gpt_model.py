@@ -16,6 +16,7 @@ class GPTModel(nn.Module):
 
         self.final_norm: LayerNorm = LayerNorm(cfg=cfg)
         self.out_head: nn.Linear = nn.Linear(in_features=cfg['emb_dim'], out_features=cfg['vocab_size'])
+        # self.out_head.weight = self.token_embeddings.weight
 
     def forward(self, input_tokens: torch.Tensor) -> torch.Tensor:
         batch, seq_len = input_tokens.shape
