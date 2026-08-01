@@ -1,16 +1,22 @@
 from collections import deque
 from itertools import islice
-import tiktoken
+# import tiktoken
+from transformers import AutoTokenizer
 import torch
 from datasets import load_dataset
+from config import MAYFEI_SMALL
 
 
 class StreamingPipeline:
     def __init__(self, context_length: int, batch_size: int, shuffle_buffer: int = 1000, seed: int = 42):
         self.context_length = context_length
         self.batch_size = batch_size
-        self.tokenizer = tiktoken.get_encoding('gpt2')
-        self.eos_token_id = self.tokenizer.eot_token
+        # self.tokenizer = tiktoken.get_encoding('gpt2')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            MAYFEI_SMALL['tokenizer_name'], trust_remote_code=True, use_fast=False,
+        )
+        # self.eos_token_id = self.tokenizer.eot_token
+        self.eos_token_id = self.tokenizer.eos_token_id
 
         dataset = load_dataset('openbmb/Ultra-FineWeb', streaming=True)
         self.en_dataset = dataset['en'].select_columns(['content'])
@@ -43,7 +49,8 @@ class StreamingPipeline:
         required_tokens = self.context_length + 1
         while len(token_buffer) < required_tokens:
             text = self._next_text(language)
-            token_buffer.extend(self.tokenizer.encode_ordinary(text))
+            # token_buffer.extend(self.tokenizer.encode_ordinary(text))
+            token_buffer.extend(self.tokenizer.encode(text, add_special_tokens=False))
             token_buffer.append(self.eos_token_id)
         block = list(islice(token_buffer, required_tokens))
         for _ in range(self.context_length):
@@ -83,25 +90,21 @@ class StreamingPipeline:
         self.language_index = state['language_index']
 
 if __name__ == '__main__':
-    pipeline = StreamingPipeline(context_length=256, batch_size=10, shuffle_buffer=0)
-    i, t = pipeline.next_batch()
-    print(i.shape)
-    print(t.shape)
-    '''
-    torch.save(
-    {
-        "model": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-        "data_pipeline": pipeline.state_dict(),
-    },
-    "checkpoint.pt",
-)
-    checkpoint = torch.load(
-    "checkpoint.pt",
-    weights_only=False,
-)
+    # pipeline = StreamingPipeline(context_length=256, batch_size=10, shuffle_buffer=0)
+    # i, t = pipeline.next_batch()
+    # print(i.shape)
+    # print(t.shape)
+    tokenizer = AutoTokenizer.from_pretrained(
+        "Skywork/Skywork-13B-base", trust_remote_code=True, use_fast=False
+    )
 
-pipeline.load_state_dict(
-    checkpoint["data_pipeline"]
-)
-    '''
+    print(len(tokenizer))
+    print(tokenizer.eos_token_id)
+    a = tokenizer.encode("MayFei is bilingual.", add_special_tokens=False)
+    b = tokenizer.encode("MayFei 是一个双语模型。", add_special_tokens=False)
+    print(a)
+    print(b)
+
+    print(tokenizer.decode(a, skip_special_tokens=False))
+    print(tokenizer.decode(b, skip_special_tokens=False))
+

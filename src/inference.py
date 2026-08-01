@@ -2,28 +2,34 @@ from __future__ import annotations
 import argparse
 import gc
 from pathlib import Path
-import tiktoken
+# import tiktoken
+from transformers import AutoTokenizer
 import torch
-from config import GPT2_SMALL, INFERENCE_CONFIG
+from config import MAYFEI_INFERENCE_CONFIG, MAYFEI_SMALL
 from gpt_model import GPTModel
 from typing import Any
 
 
 class MayFeiInference:
     def __init__(self, device: str | None = None):
-        self.checkpoint_path = Path(INFERENCE_CONFIG['default_checkpoint'])
+        self.checkpoint_path = Path(MAYFEI_INFERENCE_CONFIG['default_checkpoint'])
         if not self.checkpoint_path.exists():
             raise FileNotFoundError(f'Checkpoint not found: {self.checkpoint_path}')
 
         self.device = self._resolve_device(device)
-        self.tokenizer = tiktoken.get_encoding('gpt2')
-        self.tokenizer_vocab_size = self.tokenizer.n_vocab
-        self.eos_token_id = self.tokenizer.eot_token
+        # self.tokenizer = tiktoken.get_encoding('gpt2')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            MAYFEI_SMALL['tokenizer_name'], trust_remote_code=True, use_fast=False,
+        )
+        # self.tokenizer_vocab_size = self.tokenizer.n_vocab
+        self.tokenizer_vocab_size = len(self.tokenizer)
+        # self.eos_token_id = self.tokenizer.eot_token
+        self.eos_token_id = self.tokenizer.eos_token_id
 
-        self.model_config = GPT2_SMALL.copy()
+        self.model_config = MAYFEI_SMALL.copy()
 
         self.model = self._load_model()
-        print(f'Inference Ready | device={self.device}| checkpoint={self.checkpoint_path}| context_length={INFERENCE_CONFIG['context_length']:,}')
+        print(f'Inference Ready | device={self.device}| checkpoint={self.checkpoint_path}| context_length={MAYFEI_INFERENCE_CONFIG['context_length']:,}')
 
     @staticmethod
     def _resolve_device(requested_device: str | None) -> torch.device:
@@ -196,9 +202,9 @@ class MayFeiInference:
         #     if torch.cuda.is_available():
         #         torch.cuda.manual_seed_all(seed)
 
-        prompt_token_ids = self.tokenizer.encode(prompt, allowed_special=set())
+        prompt_token_ids = self.tokenizer.encode(prompt, add_special_tokens=False)
         # leave at least one position for generation
-        maximum_prompt_length = INFERENCE_CONFIG['context_length'] - 1
+        maximum_prompt_length = MAYFEI_INFERENCE_CONFIG['context_length'] - 1
         if len(prompt_token_ids) > maximum_prompt_length:
             prompt_token_ids = prompt_token_ids[-maximum_prompt_length:]
 
@@ -207,7 +213,7 @@ class MayFeiInference:
         generated_token_ids: list[int] = []
 
         for _ in range(max_new_tokens):
-            model_input = input_ids[:, -INFERENCE_CONFIG['context_length']:]
+            model_input = input_ids[:, -MAYFEI_INFERENCE_CONFIG['context_length']:]
             logits = self.model(model_input)
             if isinstance(logits, tuple):
                 logits = logits[0]
@@ -231,13 +237,13 @@ class MayFeiInference:
                 break
             generated_token_ids.append(token_id)
             input_ids = torch.cat([input_ids, next_token_id], dim=-1)
-        return self.tokenizer.decode(generated_token_ids)
+        return self.tokenizer.decode(generated_token_ids, skip_special_tokens=True)
 
 
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate text using a trained MayFei checkpoint.")
-    parser.add_argument("--checkpoint", default=INFERENCE_CONFIG['default_checkpoint'])
+    parser.add_argument("--checkpoint", default=MAYFEI_INFERENCE_CONFIG['default_checkpoint'])
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=100)
     parser.add_argument("--temperature", type=float, default=0.8)
