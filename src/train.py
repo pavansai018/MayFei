@@ -17,7 +17,7 @@ max_steps = math.ceil(TRAIN_CONFIG['max_tokens'] / tokens_per_step)
 
 checkpoint_directory = Path(TRAIN_CONFIG['checkpoint_directory'])
 last_checkpoint = checkpoint_directory / 'last.ckpt'
-
+phase_start_checkpoint = Path(TRAIN_CONFIG['phase_start_checkpoint'])
 
 class PipelineAdapter(IterableDataset):
     def __init__(self, pipeline: StreamingPipeline):
@@ -164,6 +164,12 @@ def main():
         print("Resuming | "
             f"step={saved_checkpoint['global_step']} | "
             f"tokens={training_module.tokens_seen:,}")
+        
+    elif phase_start_checkpoint.exists():
+        saved_checkpoint = torch.load(phase_start_checkpoint, map_location='cpu', weights_only=False)
+        training_module.load_state_dict(saved_checkpoint['state_dict'], strict=True)
+        training_module.restore_data_state(saved_checkpoint)
+        print(f'Starting new phase | previous tokens: {training_module.tokens_seen:,} | new_max_steps: {max_steps:,}')
 
     else:
         training_module.reserve_validation_batches()
