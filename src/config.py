@@ -64,3 +64,16 @@ INFERENCE_CONFIG = {
     'eos_token_id': 50256,
     'default_checkpoint': 'checkpoints/best.ckpt',
 }
+
+
+
+MAYFEI_SMALL = {
+    'emb_dim': 768,
+    'vocab_size': 65536,
+    'context_length': 1024,
+    'num_heads': 12,
+    'num_layers': 12,
+    'drop_rate': 0.1,
+    'qkv_bias': True,
+    'tokenizer_name': 'Skywork/Skywork-13B-base',
+}
