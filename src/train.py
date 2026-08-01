@@ -56,6 +56,7 @@ class MayFeiTrainer(L.LightningModule):
         self.tokens_seen += input_ids.numel()
         self.log('train_loss', loss, on_step=True, on_epoch=False, prog_bar=True, batch_size=input_ids.size(0), )
         self.log('tokens_seen', float(self.tokens_seen), on_step=True, on_epoch=False, prog_bar=True, batch_size=input_ids.size(0))
+        self.log('optimizer_step', float(self.global_step), on_step=True, on_epoch=False, prog_bar=True, batch_size=input_ids.size(0))
         return loss
 
     def validation_step(self, batch) -> torch.Tensor:
@@ -175,6 +176,7 @@ def main():
         mode='min',
         save_top_k=1,
         save_last=False,
+        save_weights_only=True,
         save_on_train_epoch_end=False,
         auto_insert_metric_name=False,
         enable_version_counter=False,
@@ -182,13 +184,15 @@ def main():
 
     last_checkpoint_callback = ModelCheckpoint(
         dirpath=checkpoint_directory,
-        filename='step-{step:08d}',
+        filename='last',
         monitor=None,
         save_top_k=1,
         save_last=True,
+        save_weights_only=False,
         every_n_train_steps=TRAIN_CONFIG['checkpoint_interval'],
         save_on_train_epoch_end=False,
         auto_insert_metric_name=False,
+        enable_version_counter=False,
     )
 
     early_stopping_callback = EarlyStopping(
@@ -203,6 +207,19 @@ def main():
     learning_rate_callback = LearningRateMonitor(logging_interval='step')
     logger = CSVLogger(save_dir='logs', name='mayfei')
 
+    def get_callbacks():
+        callbacks = []
+        if TRAIN_CONFIG['enable_best_checkpoint_callback']:
+            callbacks.append(best_model_callback)
+        if TRAIN_CONFIG['enable_last_checkpoint_callback']:
+            callbacks.append(last_checkpoint_callback)
+        if TRAIN_CONFIG['enable_learning_rate_callback']:
+            callbacks.append(learning_rate_callback)
+        if TRAIN_CONFIG['enable_early_stopping_callback']:
+            callbacks.append(early_stopping_callback)
+
+        return callbacks
+    
     trainer = L.Trainer(
         accelerator='gpu' if torch.cuda.is_available() else 'cpu', 
         devices=1,
@@ -218,12 +235,7 @@ def main():
         val_check_interval=TRAIN_CONFIG['evaluation_interval'] * TRAIN_CONFIG['gradient_accumalation_steps'],
         num_sanity_val_steps=0,
         log_every_n_steps=TRAIN_CONFIG['log_interval'],
-        callbacks=[
-            best_model_callback,
-            last_checkpoint_callback,
-            early_stopping_callback,
-            learning_rate_callback,
-        ],
+        callbacks=get_callbacks(),
         logger=logger,
         default_root_dir='training_output',
     )
