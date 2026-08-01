@@ -5,14 +5,14 @@ from pathlib import Path
 # import tiktoken
 from transformers import AutoTokenizer
 import torch
-from config import INFERENCE_CONFIG, MAYFEI_SMALL
+from config import MAYFEI_INFERENCE_CONFIG, MAYFEI_SMALL
 from gpt_model import GPTModel
 from typing import Any
 
 
 class MayFeiInference:
     def __init__(self, device: str | None = None):
-        self.checkpoint_path = Path(INFERENCE_CONFIG['default_checkpoint'])
+        self.checkpoint_path = Path(MAYFEI_INFERENCE_CONFIG['default_checkpoint'])
         if not self.checkpoint_path.exists():
             raise FileNotFoundError(f'Checkpoint not found: {self.checkpoint_path}')
 
@@ -29,7 +29,7 @@ class MayFeiInference:
         self.model_config = MAYFEI_SMALL.copy()
 
         self.model = self._load_model()
-        print(f'Inference Ready | device={self.device}| checkpoint={self.checkpoint_path}| context_length={INFERENCE_CONFIG['context_length']:,}')
+        print(f'Inference Ready | device={self.device}| checkpoint={self.checkpoint_path}| context_length={MAYFEI_INFERENCE_CONFIG['context_length']:,}')
 
     @staticmethod
     def _resolve_device(requested_device: str | None) -> torch.device:
@@ -204,7 +204,7 @@ class MayFeiInference:
 
         prompt_token_ids = self.tokenizer.encode(prompt, add_special_tokens=False)
         # leave at least one position for generation
-        maximum_prompt_length = INFERENCE_CONFIG['context_length'] - 1
+        maximum_prompt_length = MAYFEI_INFERENCE_CONFIG['context_length'] - 1
         if len(prompt_token_ids) > maximum_prompt_length:
             prompt_token_ids = prompt_token_ids[-maximum_prompt_length:]
 
@@ -213,7 +213,7 @@ class MayFeiInference:
         generated_token_ids: list[int] = []
 
         for _ in range(max_new_tokens):
-            model_input = input_ids[:, -INFERENCE_CONFIG['context_length']:]
+            model_input = input_ids[:, -MAYFEI_INFERENCE_CONFIG['context_length']:]
             logits = self.model(model_input)
             if isinstance(logits, tuple):
                 logits = logits[0]
@@ -243,7 +243,7 @@ class MayFeiInference:
 
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate text using a trained MayFei checkpoint.")
-    parser.add_argument("--checkpoint", default=INFERENCE_CONFIG['default_checkpoint'])
+    parser.add_argument("--checkpoint", default=MAYFEI_INFERENCE_CONFIG['default_checkpoint'])
     parser.add_argument("--prompt", default=None)
     parser.add_argument("--max-new-tokens", type=int, default=100)
     parser.add_argument("--temperature", type=float, default=0.8)

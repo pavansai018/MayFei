@@ -90,25 +90,21 @@ class StreamingPipeline:
         self.language_index = state['language_index']
 
 if __name__ == '__main__':
-    pipeline = StreamingPipeline(context_length=256, batch_size=10, shuffle_buffer=0)
-    i, t = pipeline.next_batch()
-    print(i.shape)
-    print(t.shape)
-    '''
-    torch.save(
-    {
-        "model": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-        "data_pipeline": pipeline.state_dict(),
-    },
-    "checkpoint.pt",
-)
-    checkpoint = torch.load(
-    "checkpoint.pt",
-    weights_only=False,
-)
+    # pipeline = StreamingPipeline(context_length=256, batch_size=10, shuffle_buffer=0)
+    # i, t = pipeline.next_batch()
+    # print(i.shape)
+    # print(t.shape)
+    tokenizer = AutoTokenizer.from_pretrained(
+        "Skywork/Skywork-13B-base", trust_remote_code=True, use_fast=False
+    )
 
-pipeline.load_state_dict(
-    checkpoint["data_pipeline"]
-)
-    '''
+    print(len(tokenizer))
+    print(tokenizer.eos_token_id)
+    a = tokenizer.encode("MayFei is bilingual.", add_special_tokens=False)
+    b = tokenizer.encode("MayFei 是一个双语模型。", add_special_tokens=False)
+    print(a)
+    print(b)
+
+    print(tokenizer.decode(a, skip_special_tokens=False))
+    print(tokenizer.decode(b, skip_special_tokens=False))
+
