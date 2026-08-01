@@ -1,16 +1,22 @@
 from collections import deque
 from itertools import islice
-import tiktoken
+# import tiktoken
+from transformers import AutoTokenizer
 import torch
 from datasets import load_dataset
+from config import MAYFEI_SMALL
 
 
 class StreamingPipeline:
     def __init__(self, context_length: int, batch_size: int, shuffle_buffer: int = 1000, seed: int = 42):
         self.context_length = context_length
         self.batch_size = batch_size
-        self.tokenizer = tiktoken.get_encoding('gpt2')
-        self.eos_token_id = self.tokenizer.eot_token
+        # self.tokenizer = tiktoken.get_encoding('gpt2')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            MAYFEI_SMALL['tokenizer_name'], trust_remote_code=True, use_fast=False,
+        )
+        # self.eos_token_id = self.tokenizer.eot_token
+        self.eos_token_id = self.tokenizer.eos_token_id
 
         dataset = load_dataset('openbmb/Ultra-FineWeb', streaming=True)
         self.en_dataset = dataset['en'].select_columns(['content'])
@@ -43,7 +49,8 @@ class StreamingPipeline:
         required_tokens = self.context_length + 1
         while len(token_buffer) < required_tokens:
             text = self._next_text(language)
-            token_buffer.extend(self.tokenizer.encode_ordinary(text))
+            # token_buffer.extend(self.tokenizer.encode_ordinary(text))
+            token_buffer.extend(self.tokenizer.encode(text, add_special_tokens=False))
             token_buffer.append(self.eos_token_id)
         block = list(islice(token_buffer, required_tokens))
         for _ in range(self.context_length):
