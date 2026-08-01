@@ -2,9 +2,10 @@ from __future__ import annotations
 import argparse
 import gc
 from pathlib import Path
-import tiktoken
+# import tiktoken
+from transformers import AutoTokenizer
 import torch
-from config import GPT2_SMALL, INFERENCE_CONFIG
+from config import INFERENCE_CONFIG, MAYFEI_SMALL
 from gpt_model import GPTModel
 from typing import Any
 
@@ -16,11 +17,16 @@ class MayFeiInference:
             raise FileNotFoundError(f'Checkpoint not found: {self.checkpoint_path}')
 
         self.device = self._resolve_device(device)
-        self.tokenizer = tiktoken.get_encoding('gpt2')
-        self.tokenizer_vocab_size = self.tokenizer.n_vocab
-        self.eos_token_id = self.tokenizer.eot_token
+        # self.tokenizer = tiktoken.get_encoding('gpt2')
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            MAYFEI_SMALL['tokenizer_name'], trust_remote_code=True, use_fast=False,
+        )
+        # self.tokenizer_vocab_size = self.tokenizer.n_vocab
+        self.tokenizer_vocab_size = len(self.tokenizer)
+        # self.eos_token_id = self.tokenizer.eot_token
+        self.eos_token_id = self.tokenizer.eos_token_id
 
-        self.model_config = GPT2_SMALL.copy()
+        self.model_config = MAYFEI_SMALL.copy()
 
         self.model = self._load_model()
         print(f'Inference Ready | device={self.device}| checkpoint={self.checkpoint_path}| context_length={INFERENCE_CONFIG['context_length']:,}')
@@ -196,7 +202,7 @@ class MayFeiInference:
         #     if torch.cuda.is_available():
         #         torch.cuda.manual_seed_all(seed)
 
-        prompt_token_ids = self.tokenizer.encode(prompt, allowed_special=set())
+        prompt_token_ids = self.tokenizer.encode(prompt, add_special_tokens=False)
         # leave at least one position for generation
         maximum_prompt_length = INFERENCE_CONFIG['context_length'] - 1
         if len(prompt_token_ids) > maximum_prompt_length:
@@ -231,7 +237,7 @@ class MayFeiInference:
                 break
             generated_token_ids.append(token_id)
             input_ids = torch.cat([input_ids, next_token_id], dim=-1)
-        return self.tokenizer.decode(generated_token_ids)
+        return self.tokenizer.decode(generated_token_ids, skip_special_tokens=True)
 
 
 
