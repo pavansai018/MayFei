@@ -9,7 +9,7 @@ from lightning.pytorch.loggers import CSVLogger
 from torch.utils.data import DataLoader, IterableDataset
 from data_pipeline import StreamingPipeline
 from gpt_model import GPTModel
-from config import GPT2_SMALL, TRAIN_CONFIG
+from config import MAYFEI_SMALL, TRAIN_CONFIG
 
 
 tokens_per_step = TRAIN_CONFIG['context_length'] * TRAIN_CONFIG['batch_size'] * TRAIN_CONFIG['gradient_accumalation_steps']
@@ -147,7 +147,7 @@ def main():
     L.seed_everything(42, workers=True)
     torch.set_float32_matmul_precision('high')
     checkpoint_directory.mkdir(parents=True, exist_ok=True)
-    model_config = GPT2_SMALL.copy()
+    model_config = MAYFEI_SMALL.copy()
 
     data_pipeline = StreamingPipeline(context_length=model_config['context_length'],
                                       batch_size=TRAIN_CONFIG['batch_size'], 
